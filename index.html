@@ -40,19 +40,39 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 </div></div>
 <div class="modal-wrap" id="profile" role="dialog" aria-modal="true" aria-labelledby="profileTitle" onclick="backdropClose(event,'profile')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('profile')">×</button>
-<h2 id="profileTitle">Your profile</h2>
-<p>Create a username or change the one saved on this browser.</p>
-<label for="username">RayGiveaway username</label>
+<h2 id="profileTitle">Your RayGiveaway account</h2>
+<p>Sign up or sign in with your email. Your email stays private and is used to contact you if you win.</p>
+<label for="username">Username</label>
 <input class="field" id="username" maxlength="20" placeholder="Choose a username" autocomplete="nickname">
-<button class="save" onclick="saveProfile()">Save username</button>
+<label for="accountEmail">Email address</label>
+<input class="field" id="accountEmail" type="email" placeholder="you@example.com" autocomplete="email">
+<label for="accountPassword">Password</label>
+<input class="field" id="accountPassword" type="password" minlength="8" placeholder="At least 8 characters" autocomplete="current-password">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button class="save" onclick="signUp()">Create account</button>
+<button class="save" style="background:#302b48" onclick="signIn()">Sign in</button>
+</div>
+<button class="save" style="background:#302b48" onclick="signOut()" id="signOutButton" hidden>Sign out</button>
 <div class="status" id="profileStatus" aria-live="polite"></div>
-<p class="small">Your username is saved on this device/browser only. It is not an online account yet.</p>
+<p class="small" id="accountNote">You'll need to confirm your email before your account is ready. Use an email address you can access.</p>
 </div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
 <script>
-function openModal(id){document.getElementById(id).classList.add('show');if(id==='profile'){document.getElementById('username').value=localStorage.getItem('raygiveaway_username')||'';document.getElementById('profileStatus').textContent='';}}
+const SUPABASE_URL = 'https://ulliotwougwdetstgokg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_IA-qs3lf1NP1k6FpdGXJTg_hq1AOKYl';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function showAccountMessage(message,isError=false){const el=document.getElementById('profileStatus');el.style.color=isError?'#ffaaaa':'#a9f0c4';el.textContent=message;}
+function openModal(id){document.getElementById(id).classList.add('show');if(id==='profile'){showAccountMessage('');refreshAccount();}}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
 function backdropClose(e,id){if(e.target.id===id)closeModal(id)}
-function saveProfile(){const input=document.getElementById('username');const name=input.value.trim();const status=document.getElementById('profileStatus');if(!name){status.style.color='#ffaaaa';status.textContent='Please enter a username first.';return;}if(!/^[a-zA-Z0-9_ -]{3,20}$/.test(name)){status.style.color='#ffaaaa';status.textContent='Use 3–20 letters, numbers, spaces, _ or -.';return;}localStorage.setItem('raygiveaway_username',name);status.style.color='#a9f0c4';status.textContent='Username saved: '+name;}
+function accountValues(){return {username:document.getElementById('username').value.trim(),email:document.getElementById('accountEmail').value.trim(),password:document.getElementById('accountPassword').value};}
+function validUsername(name){return /^[a-zA-Z0-9_ -]{3,20}$/.test(name);}
+async function signUp(){const v=accountValues();if(!validUsername(v.username)){showAccountMessage('Username must be 3–20 characters: letters, numbers, spaces, _ or -.',true);return;}if(!v.email||v.password.length<8){showAccountMessage('Enter a valid email and a password with at least 8 characters.',true);return;}showAccountMessage('Creating your account...');const {data,error}=await db.auth.signUp({email:v.email,password:v.password,options:{data:{username:v.username},emailRedirectTo:window.location.origin+window.location.pathname}});if(error){showAccountMessage(error.message,true);return;}if(data.session){await saveOnlineUsername(v.username);showAccountMessage('Account created! You are signed in.');}else{showAccountMessage('Check your email and click the confirmation link. Then come back here and sign in.');}}
+async function signIn(){const v=accountValues();if(!v.email||!v.password){showAccountMessage('Enter your email and password.',true);return;}showAccountMessage('Signing in...');const {error}=await db.auth.signInWithPassword({email:v.email,password:v.password});if(error){showAccountMessage(error.message,true);return;}await refreshAccount();showAccountMessage('You are signed in!');}
+async function saveOnlineUsername(name){const {data:{user}}=await db.auth.getUser();if(!user)return;const {error}=await db.from('profiles').update({username:name}).eq('user_id',user.id);if(error)showAccountMessage(error.message,true);}
+async function refreshAccount(){const {data:{session}}=await db.auth.getSession();const button=document.getElementById('signOutButton');button.hidden=!session;if(session){document.getElementById('accountEmail').value=session.user.email||'';const {data}=await db.from('profiles').select('username').eq('user_id',session.user.id).maybeSingle();if(data?.username)document.getElementById('username').value=data.username;document.getElementById('accountNote').textContent='Signed in. Your email is private and your profile is saved online.';}else{document.getElementById('accountNote').textContent='After signing up, check your email to confirm your address. Use an email you can access.';}}
+async function signOut(){const {error}=await db.auth.signOut();if(error){showAccountMessage(error.message,true);return;}document.getElementById('accountPassword').value='';document.getElementById('signOutButton').hidden=true;showAccountMessage('You are signed out.');}
+db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();});
 document.getElementById('year').textContent=new Date().getFullYear();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('profile')}});
 </script>
