@@ -18,6 +18,8 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 .community-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:760px;margin:28px auto 0;text-align:left}.community-panel{border:1px solid #40365f;background:linear-gradient(145deg,#211d39,#11111f);border-radius:15px;padding:17px}.community-panel h2{font-size:1.05rem;margin:0 0 12px}.community-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #39334f;font-size:.88rem}.community-row:last-child{border-bottom:0}.community-muted{color:#aaa7c3;font-size:.85rem}.past-button{margin:16px auto 0;border:1px solid #59418b;background:#21183b;color:#e6d8ff;border-radius:10px;padding:10px 15px;font-weight:800;cursor:pointer}.entry-status{min-height:18px;color:#a9f0c4;font-size:.82rem;margin-top:8px}.profile-stats{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.profile-stat{flex:1;min-width:90px;background:#211d39;border:1px solid #40365f;border-radius:10px;padding:11px;text-align:center}.profile-stat strong{display:block;font-size:1.25rem;color:#c69aff}.profile-stat span{font-size:.75rem;color:#aaa7c3}.notification-item{padding:12px;border:1px solid #40365f;border-radius:10px;background:#211d39;margin:8px 0}.notification-item small{color:#aaa7c3}.notification-item button{float:right;border:0;border-radius:7px;padding:6px 9px;background:#42336b;color:white;cursor:pointer}.notification-item.unread{border-color:#8d4df0}
 @media(max-width:620px){.community-grid{grid-template-columns:1fr}}
  @media(max-width:620px){header{padding:20px 17px}.tag{font-size:.72rem}main{margin-top:32px}.actions{grid-template-columns:1fr;max-width:390px;margin-top:30px}.action{min-height:74px;padding:15px}.action .symbol{display:inline;margin:0 9px 0 0}h1{letter-spacing:-1.5px}.subtitle{font-size:1rem}}
+
+.public-chat{max-width:760px;margin:26px auto 0;text-align:left;border:1px solid #59418b;border-radius:17px;background:linear-gradient(145deg,#211d39,#11111f);padding:18px}.public-chat h2{font-size:1.2rem;margin:0 0 5px}.chat-subtitle{color:#aaa7c3;font-size:.85rem;margin:0 0 13px}.chat-messages{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding:12px;background:#0d0d1a;border:1px solid #39334f;border-radius:12px}.chat-message{padding:9px 11px;border-radius:10px;background:#211d39;overflow-wrap:anywhere}.chat-message strong{color:#c69aff;font-size:.88rem}.chat-message p{margin:4px 0 0;color:#f1effa;white-space:pre-wrap}.chat-message time{display:block;color:#85819f;font-size:.72rem;margin-top:4px}.chat-form{display:flex;gap:8px;margin-top:10px}.chat-form input{flex:1;min-width:0;margin:0}.chat-form button{border:0;border-radius:10px;padding:0 16px;background:linear-gradient(100deg,#8d4df0,#398ee8);color:white;font-weight:850;cursor:pointer}.chat-status{min-height:19px;color:#aaa7c3;font-size:.8rem;margin-top:7px}.chat-form button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:620px){.public-chat{padding:13px}.chat-form{flex-direction:column}.chat-form button{padding:12px}}
 </style>
 </head>
 <body>
@@ -39,6 +41,16 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
  <section class="community-panel"><h2>🎉 Latest Winner</h2><div id="latestWinner" class="community-muted">Loading winner announcements...</div></section>
 </div>
 <button class="past-button" onclick="openModal('pastGiveaways')">View Past Giveaways</button>
+<section class="public-chat" aria-label="Public community chat">
+ <h2>💬 Community Live Chat</h2>
+ <p class="chat-subtitle">One public chat for everyone. Every message is visible to the community. Private messages are not available.</p>
+ <div id="chatMessages" class="chat-messages" aria-live="polite"><div class="loading-note">Loading chat...</div></div>
+ <form id="chatForm" class="chat-form" onsubmit="sendChatMessage(event)">
+  <input id="chatInput" class="field" maxlength="400" placeholder="Sign in to send a public message..." autocomplete="off" disabled>
+  <button id="chatSendButton" type="submit" disabled>Send</button>
+ </form>
+ <div id="chatStatus" class="chat-status" aria-live="polite">Anyone can read. Sign in to chat.</div>
+</section>
 
 </main>
 <div class="footer">© <span id="year"></span> RayGiveaway · Made for the community</div>
@@ -288,8 +300,60 @@ async function pickGiveawayWinner(id){
  await loadAdminGiveaways();await loadGiveaways();
 }
 
-db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();});
-document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();loadCommunityPanels();db.auth.refreshSession().then(()=>refreshAdminAccess());
+
+let chatChannel = null;
+function chatStatus(message,isError=false){const el=document.getElementById('chatStatus');el.textContent=message;el.style.color=isError?'#ffaaaa':'#aaa7c3';}
+function renderChatMessage(row){
+ const wrap=document.createElement('article');wrap.className='chat-message';
+ const name=document.createElement('strong');name.textContent=row.username||'Community member';
+ const body=document.createElement('p');body.textContent=row.message||'';
+ const time=document.createElement('time');time.textContent=row.created_at?new Date(row.created_at).toLocaleString():'';
+ wrap.append(name,body,time);return wrap;
+}
+async function loadChatMessages(){
+ const box=document.getElementById('chatMessages');
+ const {data,error}=await db.from('chat_messages').select('id,username,message,created_at').order('created_at',{ascending:false}).limit(50);
+ if(error){box.innerHTML='<div class="loading-note">Chat is temporarily unavailable.</div>';chatStatus('Could not load messages. Please refresh later.',true);return;}
+ box.replaceChildren();
+ (data||[]).reverse().forEach(row=>box.appendChild(renderChatMessage(row)));
+ if(!data?.length)box.innerHTML='<div class="loading-note">No messages yet. Start the conversation!</div>';
+ box.scrollTop=box.scrollHeight;
+}
+async function updateChatAccess(){
+ const {data:{session}}=await db.auth.getSession();
+ const input=document.getElementById('chatInput'),send=document.getElementById('chatSendButton');
+ input.disabled=!session;send.disabled=!session;
+ input.placeholder=session?'Write a message everyone can see...':'Sign in to send a public message...';
+ chatStatus(session?'You are chatting publicly as your RayGiveaway username.':'Anyone can read. Sign in to chat.');
+}
+async function sendChatMessage(event){
+ event.preventDefault();
+ const input=document.getElementById('chatInput');const message=input.value.trim();
+ if(!message)return;
+ if(message.length>400){chatStatus('Messages must be 400 characters or less.',true);return;}
+ const {data:{session}}=await db.auth.getSession();
+ if(!session){chatStatus('Sign in before sending a message.',true);return;}
+ const button=document.getElementById('chatSendButton');button.disabled=true;
+ const {error}=await db.from('chat_messages').insert({user_id:session.user.id,username:'',message});
+ button.disabled=false;
+ if(error){chatStatus(error.message||'Message could not be sent.',true);return;}
+ input.value='';chatStatus('Message sent to the public chat.');
+}
+function startLiveChat(){
+ if(chatChannel)return;
+ chatChannel=db.channel('raygiveaway-public-chat')
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},payload=>{
+    const box=document.getElementById('chatMessages');
+    const empty=box.querySelector('.loading-note');if(empty)box.replaceChildren();
+    box.appendChild(renderChatMessage(payload.new));box.scrollTop=box.scrollHeight;
+  }).subscribe(status=>{
+    if(status==='SUBSCRIBED')chatStatus('Live chat connected. Everyone can see these messages.');
+    else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')chatStatus('Live updates disconnected. Refresh the page to reconnect.',true);
+  });
+}
+
+db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();updateChatAccess();});
+document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();loadCommunityPanels();loadChatMessages();startLiveChat();db.auth.refreshSession().then(()=>{refreshAdminAccess();updateChatAccess();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('giveaways');closeModal('profile');closeModal('adminPanel');closeModal('pastGiveaways')}});
 </script>
 </body>
