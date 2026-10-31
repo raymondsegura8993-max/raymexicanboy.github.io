@@ -13,7 +13,7 @@ main{max-width:900px;margin:55px auto 0;padding:20px 22px 70px;text-align:center
 h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-weight:950;letter-spacing:-3px}h1 span{background:linear-gradient(90deg,#bd83ff,#55d7ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .subtitle{max-width:570px;margin:0 auto;color:var(--muted);font-size:1.08rem;line-height:1.7}
 .actions{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:760px;margin:42px auto 0}.action{border:1px solid #373451;background:linear-gradient(145deg,#1b1a32,#11111f);color:white;border-radius:17px;padding:22px 12px;cursor:pointer;font-size:1rem;font-weight:850;transition:.2s;min-height:92px}.action:hover{transform:translateY(-4px);border-color:var(--purple);box-shadow:0 12px 35px #8e52ff25}.action.primary{background:linear-gradient(110deg,#793ee5,#3e8de8);border:0}.action .symbol{display:block;font-size:1.5rem;margin-bottom:7px}.note{color:#85819f;font-size:.82rem;margin-top:35px}.footer{border-top:1px solid #242238;text-align:center;padding:24px;color:#77738e;font-size:.82rem}
-.modal-wrap{display:none;position:fixed;inset:0;background:#05050bdc;z-index:5;align-items:center;justify-content:center;padding:18px}.modal-wrap.show{display:flex}.modal{width:min(100%,510px);background:#171629;border:1px solid #514078;border-radius:20px;padding:27px;text-align:left;box-shadow:0 25px 90px #0009;position:relative}.close{position:absolute;right:16px;top:13px;background:none;border:0;color:#bbb;font-size:1.6rem;cursor:pointer}.modal h2{font-size:1.55rem;margin:0 35px 10px 0}.modal p{color:var(--muted);line-height:1.6}.steps{padding-left:22px;color:#e5e0f5;line-height:1.9}.discord-link,.save{display:inline-block;margin-top:12px;border:0;border-radius:10px;padding:12px 17px;background:linear-gradient(100deg,#8d4df0,#398ee8);color:white;text-decoration:none;font-weight:850;cursor:pointer;font-size:.95rem}.field{width:100%;margin-top:8px;padding:13px 14px;border:1px solid #49435f;border-radius:10px;background:#0d0d1a;color:white;font-size:1rem}.status{min-height:22px;color:#a9f0c4;font-size:.9rem;margin-top:10px}.small{font-size:.8rem;color:#8f8aa8!important}
+.modal-wrap{display:none;position:fixed;inset:0;background:#05050bdc;z-index:5;align-items:center;justify-content:center;padding:18px}.modal-wrap.show{display:flex}.modal{width:min(100%,510px);background:#171629;border:1px solid #514078;border-radius:20px;padding:27px;text-align:left;box-shadow:0 25px 90px #0009;position:relative}.close{position:absolute;right:16px;top:13px;background:none;border:0;color:#bbb;font-size:1.6rem;cursor:pointer}.modal h2{font-size:1.55rem;margin:0 35px 10px 0}.modal p{color:var(--muted);line-height:1.6}.steps{padding-left:22px;color:#e5e0f5;line-height:1.9}.discord-link,.save{display:inline-block;margin-top:12px;border:0;border-radius:10px;padding:12px 17px;background:linear-gradient(100deg,#8d4df0,#398ee8);color:white;text-decoration:none;font-weight:850;cursor:pointer;font-size:.95rem}.field{width:100%;margin-top:8px;padding:13px 14px;border:1px solid #49435f;border-radius:10px;background:#0d0d1a;color:white;font-size:1rem}.status{min-height:22px;color:#a9f0c4;font-size:.9rem;margin-top:10px}.small{font-size:.8rem;color:#8f8aa8!important}.giveaway-list{display:grid;gap:13px;margin-top:18px}.giveaway-card{border:1px solid #40365f;background:linear-gradient(145deg,#211d39,#11111f);border-radius:14px;padding:17px}.giveaway-card h3{margin:0 0 7px;font-size:1.12rem}.giveaway-card p{margin:7px 0;color:#c5c0d8}.prize{color:#c69aff!important;font-weight:850}.countdown{font-size:.88rem;color:#8fe7ff;font-weight:800}.giveaway-card a{display:inline-block;margin-top:10px;color:#fff;background:#6840b7;border-radius:9px;padding:9px 13px;text-decoration:none;font-weight:800}.loading-note{color:#aaa7c3;text-align:center;padding:20px}
 @media(max-width:620px){header{padding:20px 17px}.tag{font-size:.72rem}main{margin-top:32px}.actions{grid-template-columns:1fr;max-width:390px;margin-top:30px}.action{min-height:74px;padding:15px}.action .symbol{display:inline;margin:0 9px 0 0}h1{letter-spacing:-1.5px}.subtitle{font-size:1rem}}
 </style>
 </head>
@@ -25,6 +25,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <p class="subtitle">Welcome to RayGiveaway — a place for gaming giveaways, community rewards, and more. Get involved and don't miss the next drop.</p>
 <div class="actions">
 <button class="action primary" onclick="openModal('enter')"><span class="symbol">🎁</span>Enter Giveaway</button>
+<button class="action" onclick="openModal('giveaways')"><span class="symbol">🏆</span>Active Giveaways</button>
 <button class="action" onclick="openModal('profile')"><span class="symbol">👤</span>Profile</button>
 </div>
 <p class="note">Giveaways and entry instructions are announced in the RayMexicanBoy Discord.</p>
@@ -37,6 +38,12 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <ol class="steps"><li>Join the RayMexicanBoy Discord server.</li><li>Open the <b>giveaways</b> channel and choose an active giveaway.</li><li>Read that giveaway's rules and complete the listed entry steps.</li><li>Use the username saved on your RayGiveaway profile if the giveaway asks for it.</li></ol>
 <a class="discord-link" href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer">Join the Discord</a>
 <p class="small">This page currently displays entry instructions. It does not submit or track giveaway entries automatically.</p>
+</div></div>
+<div class="modal-wrap" id="giveaways" role="dialog" aria-modal="true" aria-labelledby="giveawaysTitle" onclick="backdropClose(event,'giveaways')">
+<div class="modal"><button class="close" aria-label="Close" onclick="closeModal('giveaways')">×</button>
+<h2 id="giveawaysTitle">Active Giveaways</h2>
+<p>See current prizes and when entries close. To enter, follow the instructions in Discord.</p>
+<div id="giveawayList" class="giveaway-list"><div class="loading-note">Loading giveaways...</div></div>
 </div></div>
 <div class="modal-wrap" id="profile" role="dialog" aria-modal="true" aria-labelledby="profileTitle" onclick="backdropClose(event,'profile')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('profile')">×</button>
@@ -62,9 +69,22 @@ const SUPABASE_URL = 'https://ulliotwougwdetstgokg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_IA-qs3lf1NP1k6FpdGXJTg_hq1AOKYl';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function showAccountMessage(message,isError=false){const el=document.getElementById('profileStatus');el.style.color=isError?'#ffaaaa':'#a9f0c4';el.textContent=message;}
-function openModal(id){document.getElementById(id).classList.add('show');if(id==='profile'){showAccountMessage('');refreshAccount();}}
+function openModal(id){document.getElementById(id).classList.add('show');if(id==='profile'){showAccountMessage('');refreshAccount();}if(id==='giveaways'){loadGiveaways();}}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
 function backdropClose(e,id){if(e.target.id===id)closeModal(id)}
+let giveawayClock=null;
+function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+async function loadGiveaways(){
+const list=document.getElementById('giveawayList');list.innerHTML='<div class="loading-note">Loading giveaways...</div>';
+const {data,error}=await db.from('giveaways').select('id,title,description,prize,ends_at').eq('status','active').order('ends_at',{ascending:true,nullsFirst:false});
+if(error){list.textContent='Could not load giveaways right now. Please try again later.';return;}
+const now=Date.now();const active=(data||[]).filter(g=>!g.ends_at||new Date(g.ends_at).getTime()>now);
+if(!active.length){list.innerHTML='<div class="loading-note">No active giveaways right now. Check back soon!</div>';return;}
+list.innerHTML=active.map(g=>'<article class="giveaway-card"><h3>'+escapeHTML(g.title||'Giveaway')+'</h3><p class="prize">🎁 Prize: '+escapeHTML(g.prize||'See Discord for details')+'</p>'+(g.description?'<p>'+escapeHTML(g.description)+'</p>':'')+'<p class="countdown" '+(g.ends_at?'data-ends="'+escapeHTML(g.ends_at)+'"':'')+'>'+(g.ends_at?'Time remaining: calculating...':'No deadline set')+'</p><a href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer">Enter in Discord</a></article>').join('');
+if(giveawayClock)clearInterval(giveawayClock);
+const tick=()=>{document.querySelectorAll('.countdown[data-ends]').forEach(el=>{const ms=new Date(el.dataset.ends).getTime()-Date.now();if(ms<=0){el.textContent='Deadline passed — check Discord for updates';return;}const days=Math.floor(ms/86400000),hours=Math.floor(ms%86400000/3600000),mins=Math.floor(ms%3600000/60000),secs=Math.floor(ms%60000/1000);el.textContent='Time remaining: '+days+'d '+hours+'h '+mins+'m '+secs+'s';});};
+tick();giveawayClock=setInterval(tick,1000);
+}
 function accountValues(){return {username:document.getElementById('username').value.trim(),email:document.getElementById('accountEmail').value.trim(),password:document.getElementById('accountPassword').value};}
 function validUsername(name){return /^[a-zA-Z0-9_ -]{3,20}$/.test(name);}
 async function signUp(){const v=accountValues();if(!validUsername(v.username)){showAccountMessage('Username must be 3–20 characters: letters, numbers, spaces, _ or -.',true);return;}if(!v.email||v.password.length<8){showAccountMessage('Enter a valid email and a password with at least 8 characters.',true);return;}showAccountMessage('Creating your account...');const {data,error}=await db.auth.signUp({email:v.email,password:v.password,options:{data:{username:v.username},emailRedirectTo:window.location.origin+window.location.pathname}});if(error){showAccountMessage(error.message,true);return;}if(data.session){await saveOnlineUsername(v.username);showAccountMessage('Account created! You are signed in.');}else{showAccountMessage('Check your email and click the confirmation link. Then come back here and sign in.');}}
@@ -74,7 +94,7 @@ async function refreshAccount(){const {data:{session}}=await db.auth.getSession(
 async function signOut(){const {error}=await db.auth.signOut();if(error){showAccountMessage(error.message,true);return;}document.getElementById('accountPassword').value='';document.getElementById('signOutButton').hidden=true;showAccountMessage('You are signed out.');}
 db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();});
 document.getElementById('year').textContent=new Date().getFullYear();
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('profile')}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('giveaways');closeModal('profile')}});
 </script>
 </body>
 </html>
