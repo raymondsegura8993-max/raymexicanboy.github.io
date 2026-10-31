@@ -175,7 +175,7 @@ async function pickGiveawayWinner(id){
 }
 
 db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();});
-document.getElementById('year').textContent=new Date().getFullYear();refreshAdminAccess();
+document.getElementById('year').textContent=new Date().getFullYear();db.auth.refreshSession().then(()=>refreshAdminAccess());
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('giveaways');closeModal('profile');closeModal('adminPanel')}});
 </script>
 </body>
