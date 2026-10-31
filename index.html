@@ -175,18 +175,19 @@ async function sendMemberMessage(event){
 async function loadAdminPrivateInbox(){
  const allowed=await refreshAdminAccess();if(!allowed)return;
  const list=document.getElementById('adminMessagePeople');
- const {data:messages,error}=await db.from('private_messages').select('sender_id,recipient_id,message,created_at').order('created_at',{ascending:false}).limit(500);
- if(error){list.textContent='Could not load inbox: '+error.message;return;}
- const ids=[...new Set((messages||[]).map(m=>m.sender_id===RAY_ADMIN_ID?m.recipient_id:m.sender_id).filter(id=>id!==RAY_ADMIN_ID))];
- if(!ids.length){list.textContent='No private messages yet.';return;}
- const {data:profiles}=await db.from('profiles').select('user_id,username').in('user_id',ids);
- const names=new Map((profiles||[]).map(p=>[p.user_id,p.username||'Member']));
+ const [{data:messages,error:messageError},{data:profiles,error:profileError}]=await Promise.all([
+  db.from('private_messages').select('sender_id,recipient_id,message,created_at').order('created_at',{ascending:false}).limit(500),
+  db.from('profiles').select('user_id,username').order('username',{ascending:true}).limit(500)
+ ]);
+ if(messageError||profileError){list.textContent='Could not load inbox or member list.';return;}
+ const members=(profiles||[]).filter(p=>p.user_id!==RAY_ADMIN_ID);
+ if(!members.length){list.textContent='No members have registered yet.';return;}
  list.replaceChildren();
- ids.forEach(id=>{
-  const latest=messages.find(m=>(m.sender_id===id&&m.recipient_id===RAY_ADMIN_ID)||(m.sender_id===RAY_ADMIN_ID&&m.recipient_id===id));
+ members.forEach(member=>{
+  const latest=(messages||[]).find(m=>(m.sender_id===member.user_id&&m.recipient_id===RAY_ADMIN_ID)||(m.sender_id===RAY_ADMIN_ID&&m.recipient_id===member.user_id));
   const btn=document.createElement('button');btn.className='admin-nav';btn.style.cssText='display:block;width:100%;text-align:left;margin:5px 0';
-  btn.textContent=(names.get(id)||'Member')+' — '+(latest?.message||'Open conversation').slice(0,65);
-  btn.onclick=()=>openAdminPrivateConversation(id,names.get(id)||'Member');
+  btn.textContent=(member.username||'Member')+' — '+(latest?.message||'Start a conversation').slice(0,65);
+  btn.onclick=()=>openAdminPrivateConversation(member.user_id,member.username||'Member');
   list.appendChild(btn);
  });
 }
