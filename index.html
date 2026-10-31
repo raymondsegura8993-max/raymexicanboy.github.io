@@ -46,14 +46,14 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('enter')">×</button>
 <h2 id="enterTitle">How to enter a giveaway</h2>
 <p>Follow these steps whenever a giveaway is active:</p>
-<ol class="steps"><li>Join the RayMexicanBoy Discord server.</li><li>Open the <b>giveaways</b> channel and choose an active giveaway.</li><li>Read that giveaway's rules and complete the listed entry steps.</li><li>Use the username saved on your RayGiveaway profile if the giveaway asks for it.</li></ol>
+<ol class="steps"><li>Join the RayMexicanBoy Discord server.</li><li>Open the <b>Active Giveaways</b> section on this website and press Enter Giveaway.</li><li>Then open the <b>giveaways</b> channel in Discord and complete that giveaway's rules.</li><li>Use the username saved on your RayGiveaway profile if the giveaway asks for it.</li></ol>
 <a class="discord-link" href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer">Join the Discord</a>
 <p class="small">This page currently displays entry instructions. It does not submit or track giveaway entries automatically.</p>
 </div></div>
 <div class="modal-wrap" id="giveaways" role="dialog" aria-modal="true" aria-labelledby="giveawaysTitle" onclick="backdropClose(event,'giveaways')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('giveaways')">×</button>
 <h2 id="giveawaysTitle">Active Giveaways</h2>
-<p>See current prizes and when entries close. To enter, follow the instructions in Discord.</p>
+<p>See current prizes, entry counts, and deadlines. Enter here first, then complete the rules in Discord.</p>
 <div id="giveawayList" class="giveaway-list"><div class="loading-note">Loading giveaways...</div></div>
 </div></div>
 
@@ -284,7 +284,7 @@ async function pickGiveawayWinner(id){
  if(error){adminBusy=false;adminMessage('Could not save winner: '+error.message,true);return;}
  await db.from('giveaways').update({status:'closed'}).eq('id',id);
  const {data:profile}=await db.from('profiles').select('username').eq('user_id',winnerId).maybeSingle();
- const winnerName=profile?.username||'Winner';const {error:notificationError}=await db.from('notifications').insert({user_id:winnerId,title:'You won a giveaway! 🎉',message:'Congratulations! You won '+winnerName+' — '+ 'the giveaway. Please check Discord for details.',type:'win'});adminBusy=false;adminMessage('Winner selected: '+winnerName+'. '+(notificationError?'The winner notification could not be saved.':'A notification was added to their profile.')+' Contact them using their account email in Supabase Auth.');
+ const winnerName=profile?.username||'Winner';const {error:notificationError}=await db.from('notifications').insert({user_id:winnerId,title:'You won a giveaway! 🎉',message:'Congratulations! You were selected as a winner. Please check Discord for details about claiming your prize.',type:'win'});adminBusy=false;adminMessage('Winner selected: '+winnerName+'. '+(notificationError?'The winner notification could not be saved.':'A notification was added to their profile.')+' Contact them using their account email in Supabase Auth.');
  await loadAdminGiveaways();await loadGiveaways();
 }
 
