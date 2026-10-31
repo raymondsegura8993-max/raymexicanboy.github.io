@@ -34,7 +34,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <a class="action" href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer"><span class="symbol">💬</span>Join Discord</a>
 <button class="action" onclick="openModal('profile')"><span class="symbol">👤</span>Profile</button>
 </div>
-<section class="public-chat" aria-label="Public community chat">
+<section class="public-chat" aria-label="Private messaging information" style="display:none">
  <h2>💬 Community Live Chat</h2>
  <p class="chat-subtitle">One public chat for everyone. Every message is visible to the community. Private messages are not available.</p>
  <div class="member-counts" aria-live="polite">
@@ -94,6 +94,16 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 </div>
 <button class="save" onclick="saveProfile()" id="saveProfileButton" hidden>Save profile</button>
   <div id="profileStats" class="profile-stats" hidden></div>
+  <section id="memberMessageBox" hidden style="margin:18px 0;padding:14px;border:1px solid #59418b;border-radius:12px;background:#211d39">
+    <h3 style="margin:0 0 8px">✉️ Private message Ray</h3>
+    <p class="small">Only you and Ray can see this conversation. Members cannot message one another.</p>
+    <div id="memberMessageThread" style="max-height:220px;overflow:auto;background:#0d0d1a;border-radius:9px;padding:10px;margin:10px 0"></div>
+    <form onsubmit="sendMemberMessage(event)" style="display:flex;gap:8px">
+      <input id="memberMessageInput" class="field" maxlength="2000" placeholder="Write a private message..." style="margin:0;min-width:0;flex:1">
+      <button class="save" type="submit" style="margin:0">Send</button>
+    </form>
+    <div id="memberMessageStatus" class="small" aria-live="polite"></div>
+  </section>
   <h3 id="notificationsHeading" hidden>🔔 Notifications</h3><div id="notificationList"></div>
   <div id="profileHistory"></div>
   <button class="save" style="background:#302b48" onclick="signOut()" id="signOutButton" hidden>Sign out</button>
@@ -109,13 +119,101 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <label for="adminDescriptionInput">Description (optional)</label><textarea class="field" id="adminDescriptionInput" maxlength="500" rows="3" placeholder="Giveaway details and rules"></textarea>
 <label for="adminEndsInput">Entry deadline</label><input class="field" id="adminEndsInput" type="datetime-local" required>
 <button class="save" type="submit">Create &amp; publish giveaway</button></form>
-<div class="admin-status" id="adminStatus" aria-live="polite"></div><h3 style="margin-top:24px">Manage giveaways</h3><div class="admin-list" id="adminGiveawayList"><div class="loading-note">Loading...</div></div>
+<div class="admin-status" id="adminStatus" aria-live="polite"></div><h3 style="margin-top:24px">Manage giveaways</h3><section style="margin-top:26px;padding-top:18px;border-top:1px solid #40365f">
+  <h3>📥 Private Member Messages</h3>
+  <p class="small">Only you and the selected member can see each conversation. Members cannot message one another.</p>
+  <div id="adminMessagePeople" class="admin-list">Loading inbox...</div>
+  <div id="adminMessageConversation" hidden style="margin-top:14px">
+    <h4 id="adminMessageTitle"></h4>
+    <div id="adminMessageThread" style="max-height:260px;overflow:auto;background:#0d0d1a;border:1px solid #39334f;border-radius:10px;padding:10px"></div>
+    <form onsubmit="sendAdminMessage(event)" style="display:flex;gap:8px;margin-top:10px">
+      <input id="adminMessageInput" class="field" maxlength="2000" placeholder="Reply privately..." style="margin:0;min-width:0;flex:1">
+      <button class="save" type="submit" style="margin:0">Send reply</button>
+    </form>
+    <div id="adminMessageStatus" class="small" aria-live="polite"></div>
+  </div>
+</section>
+<div class="admin-list" id="adminGiveawayList"><div class="loading-note">Loading...</div></div>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL = 'https://ulliotwougwdetstgokg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_IA-qs3lf1NP1k6FpdGXJTg_hq1AOKYl';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const RAY_ADMIN_ID = 'cc1ebb55-62f1-491e-ab54-56514159791f';
+let activeAdminMessageUser = null;
+function renderPrivateMessage(row,currentId){
+ const item=document.createElement('div');
+ item.style.cssText='padding:9px 10px;margin:7px 0;border-radius:9px;background:'+(row.sender_id===currentId?'#30264c':'#211d39');
+ const who=document.createElement('strong');
+ who.textContent=row.sender_id===currentId?'You':'Ray';
+ const body=document.createElement('p');body.textContent=row.message;body.style.cssText='margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere';
+ const time=document.createElement('small');time.textContent=new Date(row.created_at).toLocaleString();time.style.color='#aaa7c3';
+ item.append(who,body,time);return item;
+}
+async function loadMemberPrivateMessages(){
+ const {data:{session}}=await db.auth.getSession();if(!session)return;
+ const box=document.getElementById('memberMessageBox');box.hidden=session.user.id===RAY_ADMIN_ID;
+ if(box.hidden)return;
+ const thread=document.getElementById('memberMessageThread');
+ const {data,error}=await db.from('private_messages').select('sender_id,recipient_id,message,created_at').or('sender_id.eq.'+session.user.id+',recipient_id.eq.'+session.user.id).order('created_at',{ascending:true}).limit(100);
+ if(error){thread.textContent='Could not load your private messages.';return;}
+ thread.replaceChildren();
+ (data||[]).forEach(row=>thread.appendChild(renderPrivateMessage(row,session.user.id)));
+ if(!data?.length)thread.textContent='No messages yet. Send Ray a private message.';
+ thread.scrollTop=thread.scrollHeight;
+}
+async function sendMemberMessage(event){
+ event.preventDefault();const input=document.getElementById('memberMessageInput'),message=input.value.trim();
+ const {data:{session}}=await db.auth.getSession();
+ if(!session||!message)return;
+ const status=document.getElementById('memberMessageStatus');status.textContent='Sending...';
+ const {error}=await db.from('private_messages').insert({sender_id:session.user.id,recipient_id:RAY_ADMIN_ID,message});
+ if(error){status.textContent='Could not send: '+error.message;return;}
+ input.value='';status.textContent='Private message sent to Ray.';await loadMemberPrivateMessages();
+}
+async function loadAdminPrivateInbox(){
+ const allowed=await refreshAdminAccess();if(!allowed)return;
+ const list=document.getElementById('adminMessagePeople');
+ const {data:messages,error}=await db.from('private_messages').select('sender_id,recipient_id,message,created_at').order('created_at',{ascending:false}).limit(500);
+ if(error){list.textContent='Could not load inbox: '+error.message;return;}
+ const ids=[...new Set((messages||[]).map(m=>m.sender_id===RAY_ADMIN_ID?m.recipient_id:m.sender_id).filter(id=>id!==RAY_ADMIN_ID))];
+ if(!ids.length){list.textContent='No private messages yet.';return;}
+ const {data:profiles}=await db.from('profiles').select('user_id,username').in('user_id',ids);
+ const names=new Map((profiles||[]).map(p=>[p.user_id,p.username||'Member']));
+ list.replaceChildren();
+ ids.forEach(id=>{
+  const latest=messages.find(m=>(m.sender_id===id&&m.recipient_id===RAY_ADMIN_ID)||(m.sender_id===RAY_ADMIN_ID&&m.recipient_id===id));
+  const btn=document.createElement('button');btn.className='admin-nav';btn.style.cssText='display:block;width:100%;text-align:left;margin:5px 0';
+  btn.textContent=(names.get(id)||'Member')+' — '+(latest?.message||'Open conversation').slice(0,65);
+  btn.onclick=()=>openAdminPrivateConversation(id,names.get(id)||'Member');
+  list.appendChild(btn);
+ });
+}
+async function openAdminPrivateConversation(userId,username){
+ activeAdminMessageUser=userId;
+ document.getElementById('adminMessageConversation').hidden=false;
+ document.getElementById('adminMessageTitle').textContent='Conversation with '+username;
+ await loadAdminPrivateConversation();
+}
+async function loadAdminPrivateConversation(){
+ if(!activeAdminMessageUser)return;
+ const box=document.getElementById('adminMessageThread');
+ const {data,error}=await db.from('private_messages').select('sender_id,recipient_id,message,created_at').or('and(sender_id.eq.'+activeAdminMessageUser+',recipient_id.eq.'+RAY_ADMIN_ID+'),and(sender_id.eq.'+RAY_ADMIN_ID+',recipient_id.eq.'+activeAdminMessageUser+')').order('created_at',{ascending:true}).limit(200);
+ if(error){box.textContent='Could not load this conversation.';return;}
+ box.replaceChildren();(data||[]).forEach(row=>box.appendChild(renderPrivateMessage(row,RAY_ADMIN_ID)));
+ if(!data?.length)box.textContent='No messages in this conversation yet.';
+ box.scrollTop=box.scrollHeight;
+}
+async function sendAdminMessage(event){
+ event.preventDefault();const input=document.getElementById('adminMessageInput'),message=input.value.trim();
+ if(!activeAdminMessageUser||!message)return;
+ const {data:{session}}=await db.auth.getSession();if(!session||session.user.id!==RAY_ADMIN_ID)return;
+ const status=document.getElementById('adminMessageStatus');status.textContent='Sending...';
+ const {error}=await db.from('private_messages').insert({sender_id:session.user.id,recipient_id:activeAdminMessageUser,message});
+ if(error){status.textContent='Could not send: '+error.message;return;}
+ input.value='';status.textContent='Private reply sent.';await loadAdminPrivateConversation();await loadAdminPrivateInbox();
+}
 function showAccountMessage(message,isError=false){const el=document.getElementById('profileStatus');el.style.color=isError?'#ffaaaa':'#a9f0c4';el.textContent=message;}
 function openModal(id){document.getElementById(id).classList.add('show');if(id==='profile'){showAccountMessage('');refreshAccount();}if(id==='giveaways'){loadGiveaways();}if(id==='pastGiveaways'){loadPastGiveaways();}}
 function closeModal(id){document.getElementById(id).classList.remove('show')}
@@ -195,8 +293,8 @@ async function refreshAccount(){
  const button=document.getElementById('signOutButton'),save=document.getElementById('saveProfileButton'),stats=document.getElementById('profileStats');
  button.hidden=!session;save.hidden=!session;stats.hidden=!session;
  document.getElementById('notificationsHeading').hidden=!session;
- if(!session){document.getElementById('accountNote').textContent='After signing up, check your email to confirm your address. Use an email you can access.';document.getElementById('notificationList').innerHTML='';document.getElementById('profileHistory').innerHTML='';return;}
- document.getElementById('accountEmail').value=session.user.email||'';
+ if(!session){document.getElementById('memberMessageBox').hidden=true;document.getElementById('accountNote').textContent='After signing up, check your email to confirm your address. Use an email you can access.';document.getElementById('notificationList').innerHTML='';document.getElementById('profileHistory').innerHTML='';return;}
+ document.getElementById('accountEmail').value=session.user.email||'';await loadMemberPrivateMessages();
  const [{data:profile},{count:entryCount},{count:winCount},{data:entries},{data:wins}]=await Promise.all([
   db.from('profiles').select('username,bio').eq('user_id',session.user.id).maybeSingle(),
   db.from('entries').select('id',{count:'exact',head:true}).eq('user_id',session.user.id),
@@ -245,7 +343,7 @@ async function refreshAdminAccess(){
 async function openAdminPanel(){
  const allowed=await refreshAdminAccess();
  if(!allowed){openModal('profile');showAccountMessage('Sign in with the administrator account to open this page.',true);return;}
- openModal('adminPanel');loadAdminGiveaways();
+ openModal('adminPanel');loadAdminGiveaways();loadAdminPrivateInbox();
 }
 function adminMessage(message,isError=false){const el=document.getElementById('adminStatus');el.style.color=isError?'#ffaaaa':'#a9f0c4';el.textContent=message;}
 async function createGiveaway(event){
