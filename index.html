@@ -19,7 +19,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 @media(max-width:620px){.community-grid{grid-template-columns:1fr}}
  @media(max-width:620px){header{padding:20px 17px}.tag{font-size:.72rem}main{margin-top:32px}.actions{grid-template-columns:1fr;max-width:390px;margin-top:30px}.action{min-height:74px;padding:15px}.action .symbol{display:inline;margin:0 9px 0 0}h1{letter-spacing:-1.5px}.subtitle{font-size:1rem}}
 
-.public-chat{max-width:760px;margin:26px auto 0;text-align:left;border:1px solid #59418b;border-radius:17px;background:linear-gradient(145deg,#211d39,#11111f);padding:18px}.public-chat h2{font-size:1.2rem;margin:0 0 5px}.chat-subtitle{color:#aaa7c3;font-size:.85rem;margin:0 0 13px}.chat-messages{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding:12px;background:#0d0d1a;border:1px solid #39334f;border-radius:12px}.chat-message{padding:9px 11px;border-radius:10px;background:#211d39;overflow-wrap:anywhere}.chat-message strong{color:#c69aff;font-size:.88rem}.chat-message p{margin:4px 0 0;color:#f1effa;white-space:pre-wrap}.chat-message time{display:block;color:#85819f;font-size:.72rem;margin-top:4px}.chat-form{display:flex;gap:8px;margin-top:10px}.chat-form input{flex:1;min-width:0;margin:0}.chat-form button{border:0;border-radius:10px;padding:0 16px;background:linear-gradient(100deg,#8d4df0,#398ee8);color:white;font-weight:850;cursor:pointer}.chat-status{min-height:19px;color:#aaa7c3;font-size:.8rem;margin-top:7px}.chat-form button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:620px){.public-chat{padding:13px}.chat-form{flex-direction:column}.chat-form button{padding:12px}}
+.public-chat{max-width:760px;margin:26px auto 0;text-align:left;border:1px solid #59418b;border-radius:17px;background:linear-gradient(145deg,#211d39,#11111f);padding:18px}.public-chat h2{font-size:1.2rem;margin:0 0 5px}.chat-subtitle{color:#aaa7c3;font-size:.85rem;margin:0 0 13px} .member-counts{display:flex;gap:10px;margin:0 0 12px}.member-count{display:flex;align-items:center;gap:8px;flex:1;padding:11px 13px;border:1px solid #39334f;border-radius:11px;background:#171528;color:#c8c4dc;font-size:.85rem}.member-count strong{margin-left:auto;color:#fff;font-size:1.15rem}.member-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.online-dot{background:#42dc89;box-shadow:0 0 9px #42dc8977}.offline-dot{background:#85819f}.chat-messages{height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;padding:12px;background:#0d0d1a;border:1px solid #39334f;border-radius:12px}.chat-message{padding:9px 11px;border-radius:10px;background:#211d39;overflow-wrap:anywhere}.chat-message strong{color:#c69aff;font-size:.88rem}.chat-message p{margin:4px 0 0;color:#f1effa;white-space:pre-wrap}.chat-message time{display:block;color:#85819f;font-size:.72rem;margin-top:4px}.chat-form{display:flex;gap:8px;margin-top:10px}.chat-form input{flex:1;min-width:0;margin:0}.chat-form button{border:0;border-radius:10px;padding:0 16px;background:linear-gradient(100deg,#8d4df0,#398ee8);color:white;font-weight:850;cursor:pointer}.chat-status{min-height:19px;color:#aaa7c3;font-size:.8rem;margin-top:7px}.chat-form button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:620px){.public-chat{padding:13px}.chat-form{flex-direction:column} .chat-form button{padding:12px}.member-counts{gap:7px}.member-count{padding:9px;font-size:.78rem}}
 </style>
 </head>
 <body>
@@ -34,6 +34,21 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <button class="action" onclick="openModal('giveaways')"><span class="symbol">🏆</span>Active Giveaways</button>
 <button class="action" onclick="openModal('profile')"><span class="symbol">👤</span>Profile</button>
 </div>
+<section class="public-chat" aria-label="Public community chat">
+ <h2>💬 Community Live Chat</h2>
+ <p class="chat-subtitle">One public chat for everyone. Every message is visible to the community. Private messages are not available.</p>
+ <div class="member-counts" aria-live="polite">
+  <div class="member-count"><span class="member-dot online-dot"></span><span>Online</span><strong id="onlineMemberCount">—</strong></div>
+  <div class="member-count"><span class="member-dot offline-dot"></span><span>Offline</span><strong id="offlineMemberCount">—</strong></div>
+ </div>
+ <div id="chatMessages" class="chat-messages" aria-live="polite"><div class="loading-note">Loading chat...</div></div>
+ <form id="chatForm" class="chat-form" onsubmit="sendChatMessage(event)">
+  <input id="chatInput" class="field" maxlength="400" placeholder="Sign in to send a public message..." autocomplete="off" disabled>
+  <button id="chatSendButton" type="submit" disabled>Send</button>
+ </form>
+ <div id="chatStatus" class="chat-status" aria-live="polite">Anyone can read. Sign in to chat.</div>
+ <p class="chat-subtitle">Online counts signed-in members currently connected to this page. Offline counts the rest of the registered accounts.</p>
+</section>
 <p class="note">Giveaways and entry instructions are announced in the RayMexicanBoy Discord.</p>
 
 <div class="community-grid">
@@ -41,16 +56,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
  <section class="community-panel"><h2>🎉 Latest Winner</h2><div id="latestWinner" class="community-muted">Loading winner announcements...</div></section>
 </div>
 <button class="past-button" onclick="openModal('pastGiveaways')">View Past Giveaways</button>
-<section class="public-chat" aria-label="Public community chat">
- <h2>💬 Community Live Chat</h2>
- <p class="chat-subtitle">One public chat for everyone. Every message is visible to the community. Private messages are not available.</p>
- <div id="chatMessages" class="chat-messages" aria-live="polite"><div class="loading-note">Loading chat...</div></div>
- <form id="chatForm" class="chat-form" onsubmit="sendChatMessage(event)">
-  <input id="chatInput" class="field" maxlength="400" placeholder="Sign in to send a public message..." autocomplete="off" disabled>
-  <button id="chatSendButton" type="submit" disabled>Send</button>
- </form>
- <div id="chatStatus" class="chat-status" aria-live="polite">Anyone can read. Sign in to chat.</div>
-</section>
+
 
 </main>
 <div class="footer">© <span id="year"></span> RayGiveaway · Made for the community</div>
@@ -302,7 +308,40 @@ async function pickGiveawayWinner(id){
 
 
 let chatChannel = null;
+let memberPresenceChannel = null;
 function chatStatus(message,isError=false){const el=document.getElementById('chatStatus');el.textContent=message;el.style.color=isError?'#ffaaaa':'#aaa7c3';}
+async function updateMemberCounts(){
+ const onlineEl=document.getElementById('onlineMemberCount'),offlineEl=document.getElementById('offlineMemberCount');
+ const {count,error}=await db.from('profiles').select('user_id',{count:'exact',head:true});
+ if(error){onlineEl.textContent='—';offlineEl.textContent='—';return;}
+ const state=memberPresenceChannel?memberPresenceChannel.presenceState():{};
+ const onlineIds=new Set();
+ Object.values(state).flat().forEach(p=>{if(p&&p.userId)onlineIds.add(p.userId);});
+ const online=Math.min(onlineIds.size,count||0);
+ onlineEl.textContent=String(online);
+ offlineEl.textContent=String(Math.max(0,(count||0)-online));
+}
+async function syncMemberPresence(){
+ if(!memberPresenceChannel)return;
+ const {data:{session}}=await db.auth.getSession();
+ if(session){
+  const {data:profile}=await db.from('profiles').select('username').eq('user_id',session.user.id).maybeSingle();
+  await memberPresenceChannel.track({userId:session.user.id,username:profile?.username||'Member'});
+ }else{
+  await memberPresenceChannel.untrack();
+ }
+ await updateMemberCounts();
+}
+function startMemberPresence(){
+ if(memberPresenceChannel)return;
+ memberPresenceChannel=db.channel('raygiveaway-member-presence')
+  .on('presence',{event:'sync'},()=>{updateMemberCounts();})
+  .on('presence',{event:'join'},()=>{updateMemberCounts();})
+  .on('presence',{event:'leave'},()=>{updateMemberCounts();})
+  .subscribe(async status=>{
+   if(status==='SUBSCRIBED')await syncMemberPresence();
+  });
+}
 function renderChatMessage(row){
  const wrap=document.createElement('article');wrap.className='chat-message';
  const name=document.createElement('strong');name.textContent=row.username||'Community member';
@@ -352,8 +391,8 @@ function startLiveChat(){
   });
 }
 
-db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();updateChatAccess();});
-document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();loadCommunityPanels();loadChatMessages();startLiveChat();db.auth.refreshSession().then(()=>{refreshAdminAccess();updateChatAccess();});
+db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();updateChatAccess();syncMemberPresence();});
+document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();loadCommunityPanels();loadChatMessages();startLiveChat();startMemberPresence();db.auth.refreshSession().then(()=>{refreshAdminAccess();updateChatAccess();syncMemberPresence();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('giveaways');closeModal('profile');closeModal('adminPanel');closeModal('pastGiveaways')}});
 </script>
 </body>
