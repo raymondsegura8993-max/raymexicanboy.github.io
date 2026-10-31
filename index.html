@@ -74,6 +74,8 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
  <section class="community-panel"><h2>🎉 Latest Winner</h2><div id="latestWinner" class="community-muted">Loading winner announcements...</div></section>
 </div>
 <button class="past-button" onclick="openModal('pastGiveaways')">View Past Giveaways</button>
+<section class="community-panel" style="max-width:760px;margin:18px auto;text-align:left"><h2>🏆 Winner Hall of Fame</h2><p class="community-muted">Meet members who have won RayGiveaways. Select a member to view their winner profile.</p><div id="winnerHallOfFame" class="community-muted">Loading winner profiles...</div></section>
+<div class="modal-wrap" id="winnerProfileModal" role="dialog" aria-modal="true" aria-labelledby="winnerProfileTitle" onclick="backdropClose(event,'winnerProfileModal')"><div class="modal"><button class="close" aria-label="Close" onclick="closeModal('winnerProfileModal')">×</button><h2 id="winnerProfileTitle">Winner profile</h2><div id="winnerProfileDetails"></div></div></div>
 
 
 </main>
@@ -115,6 +117,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
   <section id="memberMessageBox" hidden style="margin:18px 0;padding:14px;border:1px solid #59418b;border-radius:12px;background:#211d39">
     <h3 style="margin:0 0 8px">✉️ Private message Ray</h3>
     <p class="small">Only you and Ray can see this conversation. Members cannot message one another.</p>
+    <div id="memberMessageNotice" hidden style="padding:10px;border:1px solid #8b6bd1;border-radius:9px;background:#30264c;color:#e8dcff;margin:8px 0"></div>
     <div id="memberMessageThread" style="max-height:220px;overflow:auto;background:#0d0d1a;border-radius:9px;padding:10px;margin:10px 0"></div>
     <form onsubmit="sendMemberMessage(event)" style="display:flex;gap:8px">
       <input id="memberMessageInput" class="field" maxlength="2000" placeholder="Write a private message..." style="margin:0;min-width:0;flex:1">
@@ -174,12 +177,12 @@ async function loadMemberPrivateMessages(){
  const box=document.getElementById('memberMessageBox');box.hidden=session.user.id===RAY_ADMIN_ID;
  if(box.hidden)return;
  const thread=document.getElementById('memberMessageThread');
- const {data,error}=await db.from('private_messages').select('sender_id,recipient_id,message,created_at').or('sender_id.eq.'+session.user.id+',recipient_id.eq.'+session.user.id).order('created_at',{ascending:true}).limit(100);
+ const {data,error}=await db.from('private_messages').select('id,sender_id,recipient_id,message,created_at,is_read').or('sender_id.eq.'+session.user.id+',recipient_id.eq.'+session.user.id).order('created_at',{ascending:true}).limit(100);
  if(error){thread.textContent='Could not load your private messages.';return;}
- thread.replaceChildren();
- (data||[]).forEach(row=>thread.appendChild(renderPrivateMessage(row,session.user.id)));
- if(!data?.length)thread.textContent='No messages yet. Send Ray a private message.';
- thread.scrollTop=thread.scrollHeight;
+ thread.replaceChildren();(data||[]).forEach(row=>thread.appendChild(renderPrivateMessage(row,session.user.id)));
+ if(!data?.length)thread.textContent='No messages yet. Send Ray a private message.';thread.scrollTop=thread.scrollHeight;
+ const unread=(data||[]).filter(row=>row.sender_id===RAY_ADMIN_ID&&row.recipient_id===session.user.id&&!row.is_read);const notice=document.getElementById('memberMessageNotice');
+ if(unread.length){notice.hidden=false;notice.textContent='🔔 You have '+unread.length+' new private message'+(unread.length===1?'':'s')+' from Ray!';await db.from('private_messages').update({is_read:true}).in('id',unread.map(row=>row.id));}else{notice.hidden=true;notice.textContent='';}
 }
 async function sendMemberMessage(event){
  event.preventDefault();const input=document.getElementById('memberMessageInput'),message=input.value.trim();
@@ -293,6 +296,24 @@ async function loadCommunityPanels(){
  ]);
  board.innerHTML=leaderError?'Leaderboard unavailable':(!leaders?.length?'<span class="community-muted">No entries yet. Be the first!</span>':leaders.map((u,i)=>'<div class="community-row"><span>'+(i+1)+'. '+escapeHTML(u.username)+'</span><strong>'+u.entries_count+' entries · '+u.wins+' wins</strong></div>').join(''));
  winners.innerHTML=archiveError?'Winner announcements unavailable':(!archive?.length?'<span class="community-muted">No winners announced yet.</span>':'<strong>'+escapeHTML(archive[0].winner_username)+'</strong><br>won <strong>'+escapeHTML(archive[0].prize)+'</strong><br><span class="community-muted">'+escapeHTML(archive[0].title)+'</span>');
+ await loadWinnerHallOfFame();
+}
+async function loadWinnerHallOfFame(){
+ const box=document.getElementById('winnerHallOfFame');if(!box)return;
+ const [{data:wins,error:winError},{data:profiles,error:profileError}]=await Promise.all([db.from('winners').select('user_id'),db.from('profiles').select('user_id,username,bio').limit(1000)]);
+ if(winError||profileError){box.textContent='Winner profiles are unavailable right now.';return;}
+ const counts={};(wins||[]).forEach(w=>counts[w.user_id]=(counts[w.user_id]||0)+1);
+ const ranked=(profiles||[]).filter(p=>counts[p.user_id]).map(p=>({...p,wins:counts[p.user_id]})).sort((a,b)=>b.wins-a.wins).slice(0,12);
+ if(!ranked.length){box.textContent='No winners yet. The first winner will appear here!';return;}
+ box.innerHTML=ranked.map(p=>'<button class="admin-nav" data-user-id="'+p.user_id+'" style="display:flex;width:100%;justify-content:space-between;align-items:center;margin:7px 0;text-align:left" onclick="openWinnerProfile(this.dataset.userId)"><span>'+escapeHTML(p.username||'Member')+'</span><strong>🏆 '+p.wins+' win'+(p.wins===1?'':'s')+'</strong></button>').join('');
+}
+async function openWinnerProfile(userId){
+ const [{data:profile},{count:wins},{data:winRows}]=await Promise.all([db.from('profiles').select('username,bio').eq('user_id',userId).maybeSingle(),db.from('winners').select('id',{count:'exact',head:true}).eq('user_id',userId),db.from('winners').select('giveaway_id,selected_at').eq('user_id',userId).order('selected_at',{ascending:false}).limit(10)]);
+ const details=document.getElementById('winnerProfileDetails');const ids=(winRows||[]).map(w=>w.giveaway_id);let titles={};
+ if(ids.length){const {data:games}=await db.from('giveaways').select('id,title,prize').in('id',ids);titles=Object.fromEntries((games||[]).map(g=>[g.id,g]));}
+ document.getElementById('winnerProfileTitle').textContent=(profile?.username||'Member')+' — Winner Profile';
+ details.innerHTML='<div class="profile-stats"><div class="profile-stat"><strong>'+(wins??0)+'</strong><span>Giveaways won</span></div></div>'+(profile?.bio?'<p>'+escapeHTML(profile.bio)+'</p>':'<p class="community-muted">No bio added.</p>')+'<h3>Recent wins</h3>'+((winRows||[]).length?(winRows||[]).map(w=>'<p class="community-muted">🏆 '+escapeHTML(titles[w.giveaway_id]?.title||'Giveaway')+(titles[w.giveaway_id]?.prize?' — '+escapeHTML(titles[w.giveaway_id].prize):'')+'</p>').join(''):'<p class="community-muted">No wins yet.</p>');
+ openModal('winnerProfileModal');
 }
 async function loadPastGiveaways(){
  const list=document.getElementById('pastGiveawayList');list.innerHTML='<div class="loading-note">Loading past giveaways...</div>';
