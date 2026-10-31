@@ -32,6 +32,12 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 #profile .profile-stat{padding:8px}
 #profile .notification-item{padding:9px;margin:6px 0}
 
+
+/* Let the entire profile panel scroll vertically */
+#profile.modal-wrap{display:none;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+#profile.modal-wrap.show{display:flex}
+#profile .modal{width:min(100%,510px);max-height:none;overflow:visible;margin:auto}
+
 </style>
 </head>
 <body>
