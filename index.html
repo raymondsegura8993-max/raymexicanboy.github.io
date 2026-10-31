@@ -49,7 +49,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
  <div id="chatStatus" class="chat-status" aria-live="polite">Anyone can read. Sign in to chat.</div>
  <p class="chat-subtitle">Online counts signed-in members currently connected to this page. Offline counts the rest of the registered accounts.</p>
 </section>
-<p class="note">Giveaways and entry instructions are announced in the RayMexicanBoy Discord.</p>
+<p class="note">Giveaways are hosted and entered right here on RayGiveaway. Discord is optional for community chat.</p>
 
 <div class="community-grid">
  <section class="community-panel"><h2>🏅 Community Leaderboard</h2><div id="communityLeaderboard" class="community-muted">Loading leaderboard...</div></section>
@@ -62,16 +62,15 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <div class="footer">© <span id="year"></span> RayGiveaway · Made for the community</div>
 <div class="modal-wrap" id="enter" role="dialog" aria-modal="true" aria-labelledby="enterTitle" onclick="backdropClose(event,'enter')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('enter')">×</button>
-<h2 id="enterTitle">How to enter a giveaway</h2>
-<p>Follow these steps whenever a giveaway is active:</p>
-<ol class="steps"><li>Join the RayMexicanBoy Discord server.</li><li>Open the <b>Active Giveaways</b> section on this website and press Enter Giveaway.</li><li>Then open the <b>giveaways</b> channel in Discord and complete that giveaway's rules.</li><li>Use the username saved on your RayGiveaway profile if the giveaway asks for it.</li></ol>
-<a class="discord-link" href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer">Join the Discord</a>
-<p class="small">This page currently displays entry instructions. It does not submit or track giveaway entries automatically.</p>
+<h2 id="enterTitle">Enter a RayGiveaway</h2>
+<p>Entering is simple. Everything happens on this website:</p>
+<ol class="steps"><li>Create a free RayGiveaway account or sign in.</li><li>Open Active Giveaways and choose a prize.</li><li>Press <b>Enter giveaway</b>. You will see a confirmation when your entry is saved.</li><li>One entry is allowed per account for each giveaway.</li><li>When the timer ends, the admin selects a winner and the result is posted here.</li></ol>
+<p class="small">You do not need Discord to enter. Never share your password or payment information to enter a giveaway.</p>
 </div></div>
 <div class="modal-wrap" id="giveaways" role="dialog" aria-modal="true" aria-labelledby="giveawaysTitle" onclick="backdropClose(event,'giveaways')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('giveaways')">×</button>
 <h2 id="giveawaysTitle">Active Giveaways</h2>
-<p>See current prizes, entry counts, and deadlines. Enter here first, then complete the rules in Discord.</p>
+<p>Browse prizes, see how many people entered, and enter directly on RayGiveaway. One entry per account.</p>
 <div id="giveawayList" class="giveaway-list"><div class="loading-note">Loading giveaways...</div></div>
 </div></div>
 
@@ -81,7 +80,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <div class="modal-wrap" id="profile" role="dialog" aria-modal="true" aria-labelledby="profileTitle" onclick="backdropClose(event,'profile')">
 <div class="modal"><button class="close" aria-label="Close" onclick="closeModal('profile')">×</button>
 <h2 id="profileTitle">Your RayGiveaway account</h2>
-<p>Sign up or sign in with your email. Your email stays private and is used to contact you if you win.</p>
+<p>Sign up or sign in with your email. Your email is kept private and is used for your account.</p>
 <label for="username">Username</label>
 <input class="field" id="username" maxlength="20" placeholder="Choose a username" autocomplete="nickname">
 <label for="profileBio">About me (optional, 160 characters)</label><textarea class="field" id="profileBio" maxlength="160" rows="2" placeholder="Tell the community a little about yourself"></textarea>
@@ -103,7 +102,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 </div></div>
 <div class="modal-wrap" id="adminPanel" role="dialog" aria-modal="true" aria-labelledby="adminTitle" onclick="backdropClose(event,'adminPanel')">
 <div class="modal" style="width:min(100%,720px);max-height:90vh;overflow:auto"><button class="close" aria-label="Close" onclick="closeModal('adminPanel')">×</button>
-<h2 id="adminTitle">RayGiveaway Admin Dashboard</h2><p>Create giveaways, manage their status, and select a random winner from registered entries.</p>
+<h2 id="adminTitle">RayGiveaway Admin Dashboard</h2><p>Create website giveaways, manage entry deadlines, close entries, and randomly select a winner. Members enter directly on this site.</p>
 <form class="admin-form" id="createGiveawayForm" onsubmit="createGiveaway(event)">
 <label for="adminTitleInput">Giveaway title</label><input class="field" id="adminTitleInput" maxlength="80" required placeholder="Example: Rocket League Credits">
 <label for="adminPrizeInput">Prize</label><input class="field" id="adminPrizeInput" maxlength="120" required placeholder="Example: 1,000 Credits">
@@ -136,9 +135,9 @@ const [{data:counts},{data:myEntries}]=await Promise.all([
 ]);
 const countMap=Object.fromEntries((counts||[]).map(x=>[x.giveaway_id,x.entry_count]));
 const mine=new Set((myEntries||[]).map(x=>x.giveaway_id));
-list.innerHTML=active.map(g=>'<article class="giveaway-card"><h3>'+escapeHTML(g.title||'Giveaway')+'</h3><p class="prize">🎁 Prize: '+escapeHTML(g.prize||'See Discord for details')+'</p>'+(g.description?'<p>'+escapeHTML(g.description)+'</p>':'')+'<p class="community-muted">👥 '+(countMap[g.id]??0)+' website entries</p><p class="countdown" data-ends="'+escapeHTML(g.ends_at)+'">Time remaining: calculating...</p><button class="save" '+(mine.has(g.id)?'disabled':'')+' onclick="joinGiveaway(\''+g.id+'\')">'+(mine.has(g.id)?'You are entered':'Enter giveaway')+'</button><div class="entry-status" id="entryStatus-'+g.id+'"></div><a href="https://discord.gg/vZmT96hYCg" target="_blank" rel="noopener noreferrer">Join Discord &amp; complete the rules</a></article>').join('');
+list.innerHTML=active.map(g=>'<article class="giveaway-card"><h3>'+escapeHTML(g.title||'Giveaway')+'</h3><p class="prize">🎁 Prize: '+escapeHTML(g.prize||'See prize details')+'</p>'+(g.description?'<p>'+escapeHTML(g.description)+'</p>':'')+'<p class="community-muted">👥 '+(countMap[g.id]??0)+' entries · 1 entry per account</p><p class="countdown" data-ends="'+escapeHTML(g.ends_at)+'">Time remaining: calculating...</p><button class="save" data-entry="true" '+(mine.has(g.id)?'disabled':'')+' onclick="joinGiveaway(\''+g.id+'\')">'+(mine.has(g.id)?'You are entered':'Enter giveaway')+'</button><div class="entry-status" id="entryStatus-'+g.id+'"></div></article>').join('');
 if(giveawayClock)clearInterval(giveawayClock);
-const tick=()=>{document.querySelectorAll('.countdown[data-ends]').forEach(el=>{const ms=new Date(el.dataset.ends).getTime()-Date.now();if(ms<=0){el.textContent='Deadline passed';return;}const days=Math.floor(ms/86400000),hours=Math.floor(ms%86400000/3600000),mins=Math.floor(ms%3600000/60000),secs=Math.floor(ms%60000/1000);el.textContent='Time remaining: '+days+'d '+hours+'h '+mins+'m '+secs+'s';});};
+const tick=()=>{document.querySelectorAll('.countdown[data-ends]').forEach(el=>{const ms=new Date(el.dataset.ends).getTime()-Date.now();const button=el.parentElement.querySelector('button[data-entry]');if(ms<=0){el.textContent='Entry closed';if(button){button.disabled=true;button.textContent='Entry closed';}return;}const days=Math.floor(ms/86400000),hours=Math.floor(ms%86400000/3600000),mins=Math.floor(ms%3600000/60000),secs=Math.floor(ms%60000/1000);el.textContent='Time remaining: '+days+'d '+hours+'h '+mins+'m '+secs+'s';});};
 tick();giveawayClock=setInterval(tick,1000);
 }
 async function joinGiveaway(id){
@@ -147,7 +146,7 @@ async function joinGiveaway(id){
  const status=document.getElementById('entryStatus-'+id);if(status)status.textContent='Entering...';
  const {error}=await db.from('entries').insert({giveaway_id:id,user_id:session.user.id});
  if(error){if(error.code==='23505'){if(status)status.textContent='You are already entered!';}else if(status)status.textContent='Could not enter: '+error.message;return;}
- if(status)status.textContent='You are entered! Now join Discord and complete the giveaway rules.';
+ if(status)status.textContent='You are officially entered! Good luck!';
  await loadGiveaways();await loadCommunityPanels();
 }
 
@@ -276,7 +275,7 @@ async function loadAdminGiveaways(){
   const winnerIds=(winners||[]).map(w=>w.user_id);
   let winnerText='';
   if(winnerIds.length){const {data:profiles}=await db.from('profiles').select('user_id,username').in('user_id',winnerIds);winnerText=(profiles||[]).map(p=>escapeHTML(p.username)).join(', ');}
-  return '<article class="admin-item"><h3>'+escapeHTML(g.title)+'</h3><div class="admin-meta">Prize: '+escapeHTML(g.prize)+' · Status: '+escapeHTML(g.status)+' · Entries: '+(count||0)+'<br>Ends: '+new Date(g.ends_at).toLocaleString()+(winnerText?'<br>Winner: '+winnerText:'')+'</div><div class="admin-buttons">'+(g.status==='active'?'<button class="secondary" onclick="setGiveawayStatus(\''+g.id+'\',\'closed\')">Close</button>':'<button onclick="setGiveawayStatus(\''+g.id+'\',\'active\')">Publish / Reopen</button>')+(!winnerIds.length?'<button onclick="pickGiveawayWinner(\''+g.id+'\')">Pick winner</button>':'')+'</div></article>';
+  const canPick=!winnerIds.length&&(g.status==='closed'||new Date(g.ends_at).getTime()<=Date.now());return '<article class="admin-item"><h3>'+escapeHTML(g.title)+'</h3><div class="admin-meta">Prize: '+escapeHTML(g.prize)+' · Status: '+escapeHTML(g.status)+' · Entries: '+(count||0)+'<br>Ends: '+new Date(g.ends_at).toLocaleString()+(winnerText?'<br>Winner: '+winnerText:'')+'</div><div class="admin-buttons">'+(g.status==='active'?'<button class="secondary" onclick="setGiveawayStatus(\''+g.id+'\',\'closed\')">Close entries</button>':'<button onclick="setGiveawayStatus(\''+g.id+'\',\'active\')">Reopen</button>')+(canPick?'<button onclick="pickGiveawayWinner(\''+g.id+'\')">Pick winner</button>':(!winnerIds.length?'<button class="secondary" disabled>Pick after deadline</button>':''))+'</div></article>';
  }));
  list.innerHTML=rows.join('');
 }
@@ -288,22 +287,14 @@ async function setGiveawayStatus(id,status){
 }
 async function pickGiveawayWinner(id){
  if(adminBusy)return;
- adminBusy=true;adminMessage('Choosing a winner...');
- const [{data:entries,error:entryError},{data:existing,error:winError}]=await Promise.all([
-  db.from('entries').select('user_id').eq('giveaway_id',id),
-  db.from('winners').select('user_id').eq('giveaway_id',id)
- ]);
- if(entryError||winError){adminBusy=false;adminMessage('Could not load entries. Check database permissions.',true);return;}
- if(existing?.length){adminBusy=false;adminMessage('A winner has already been selected for this giveaway.',true);return;}
- const unique=[...new Set((entries||[]).map(e=>e.user_id))];
- if(!unique.length){adminBusy=false;adminMessage('Nobody has entered this giveaway yet.',true);return;}
- const random=new Uint32Array(1);crypto.getRandomValues(random);const winnerId=unique[Math.floor(random[0]/4294967296*unique.length)];
- const {error}=await db.from('winners').insert({giveaway_id:id,user_id:winnerId});
- if(error){adminBusy=false;adminMessage('Could not save winner: '+error.message,true);return;}
- await db.from('giveaways').update({status:'closed'}).eq('id',id);
- const {data:profile}=await db.from('profiles').select('username').eq('user_id',winnerId).maybeSingle();
- const winnerName=profile?.username||'Winner';const {error:notificationError}=await db.from('notifications').insert({user_id:winnerId,title:'You won a giveaway! 🎉',message:'Congratulations! You were selected as a winner. Please check Discord for details about claiming your prize.',type:'win'});adminBusy=false;adminMessage('Winner selected: '+winnerName+'. '+(notificationError?'The winner notification could not be saved.':'A notification was added to their profile.')+' Contact them using their account email in Supabase Auth.');
- await loadAdminGiveaways();await loadGiveaways();
+ if(!confirm('Select one random winner from everyone who entered? This cannot be undone.'))return;
+ adminBusy=true;adminMessage('Selecting a winner...');
+ const {data,error}=await db.rpc('pick_giveaway_winner',{p_giveaway_id:id});
+ adminBusy=false;
+ if(error){adminMessage(error.message||'Could not select a winner.',true);return;}
+ const result=data?.[0];
+ adminMessage(result?'Winner selected: '+result.winner_username+'! They have been notified in their RayGiveaway profile.':'Winner selected and notification sent.');
+ await loadAdminGiveaways();await loadGiveaways();await loadPastGiveaways();await loadCommunityPanels();
 }
 
 
