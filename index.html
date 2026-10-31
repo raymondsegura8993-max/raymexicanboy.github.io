@@ -30,7 +30,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 <p class="subtitle">Welcome to RayGiveaway — a place for gaming giveaways, community rewards, and more. Get involved and don't miss the next drop.</p>
 <section id="homeCountdown" class="home-countdown" hidden aria-live="polite"><div class="home-label">⏳ Next giveaway ends in</div><h2 id="homeGiveawayTitle"></h2><p class="home-prize" id="homeGiveawayPrize"></p><div class="home-time" id="homeGiveawayTime">Loading...</div><button onclick="openModal('giveaways')">View active giveaways</button></section>
 <div class="actions">
-<button class="action primary" onclick="openModal('enter')"><span class="symbol">🎁</span>Enter Giveaway</button>
+<button class="action primary" onclick="openModal('giveaways')"><span class="symbol">🎁</span>Enter Giveaway</button>
 <button class="action" onclick="openModal('giveaways')"><span class="symbol">🏆</span>Active Giveaways</button>
 <button class="action" onclick="openModal('profile')"><span class="symbol">👤</span>Profile</button>
 </div>
@@ -49,7 +49,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
  <div id="chatStatus" class="chat-status" aria-live="polite">Anyone can read. Sign in to chat.</div>
  <p class="chat-subtitle">Online counts signed-in members currently connected to this page. Offline counts the rest of the registered accounts.</p>
 </section>
-<p class="note">Giveaways are hosted and entered right here on RayGiveaway. Discord is optional for community chat.</p>
+<p class="note">Giveaways are created, entered, and completed right here on RayGiveaway.</p>
 
 <div class="community-grid">
  <section class="community-panel"><h2>🏅 Community Leaderboard</h2><div id="communityLeaderboard" class="community-muted">Loading leaderboard...</div></section>
@@ -158,7 +158,7 @@ async function loadHomepageCountdown(){
  const next=(data||[]).filter(g=>g.ends_at&&new Date(g.ends_at).getTime()>Date.now()).sort((a,b)=>new Date(a.ends_at)-new Date(b.ends_at))[0];
  if(!next){panel.hidden=true;if(homeGiveawayClock)clearInterval(homeGiveawayClock);return;}
  document.getElementById('homeGiveawayTitle').textContent=next.title||'Active Giveaway';
- document.getElementById('homeGiveawayPrize').textContent='🎁 Prize: '+(next.prize||'See Discord for details');
+ document.getElementById('homeGiveawayPrize').textContent='🎁 Prize: '+(next.prize||'See prize details');
  panel.hidden=false;
  if(homeGiveawayClock)clearInterval(homeGiveawayClock);
  const output=document.getElementById('homeGiveawayTime');
