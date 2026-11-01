@@ -38,10 +38,14 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 #profile.modal-wrap.show{display:flex}
 #profile .modal{width:min(100%,510px);max-height:none;overflow:visible;margin:auto}
 
+
+.control-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.control-nav button,.control-shortcuts button{border:1px solid #514078;background:#21183b;color:#eee5ff;border-radius:9px;padding:10px 12px;font-weight:800;cursor:pointer}.control-nav button:hover,.control-shortcuts button:hover{border-color:#9b5cff}.control-tab-panel{border:1px solid #40365f;background:#11111f;border-radius:14px;padding:15px;margin:14px 0;text-align:left}.control-tab-panel h3{margin:0 0 12px}.control-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.control-stat{border:1px solid #40365f;background:#211d39;border-radius:11px;padding:13px}.control-stat strong{display:block;font-size:1.55rem;color:#c69aff}.control-stat span{font-size:.78rem;color:#aaa7c3}.control-shortcuts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.control-user{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #40365f;background:#211d39;border-radius:11px;padding:12px}.control-user small{display:block;color:#aaa7c3;margin-top:4px}.control-check{display:flex;gap:9px;align-items:center;color:#e5e0f5}.control-check input{width:17px;height:17px}.control-report{border:1px solid #40365f;background:#211d39;border-radius:11px;padding:13px}.control-report p{white-space:pre-wrap;overflow-wrap:anywhere}.site-announcement{max-width:1060px;margin:0 auto 12px;padding:12px 18px;border:1px solid #59418b;background:#21183b;border-radius:12px;color:#eee5ff}.site-announcement strong{display:block;margin-bottom:4px}.maintenance-screen{position:fixed;inset:0;z-index:9999;background:#090914;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}.maintenance-screen[hidden]{display:none}.maintenance-screen>div{max-width:520px}.maintenance-screen h1{font-size:clamp(2rem,7vw,3.5rem);letter-spacing:-1px}.maintenance-screen p{color:#aaa7c3;line-height:1.7}@media(max-width:620px){.control-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.control-user{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
 <header><div class="logo">Ray<span>Giveaway</span></div><div style="display:flex;align-items:center;gap:14px"><div class="tag">WIN BIG. PLAY BIG.</div><button id="adminNav" class="admin-nav" hidden onclick="openAdminPanel()">⚙ Admin Panel</button></div></header>
+<div id="siteAnnouncement" class="site-announcement" hidden><strong id="siteAnnouncementTitle"></strong><span id="siteAnnouncementMessage"></span></div>
+<div id="maintenanceScreen" class="maintenance-screen" hidden><div><div class="eyebrow">RayGiveaway</div><h1>We'll be right back.</h1><p>The website is temporarily under maintenance. Please check back soon!</p></div></div>
 <main>
 <div class="eyebrow">🎮 Giveaways for the community</div>
 <h1>YOUR NEXT WIN<br>STARTS <span>HERE.</span></h1>
@@ -126,14 +130,33 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
     <div id="memberMessageStatus" class="small" aria-live="polite"></div>
   </section>
   <h3 id="notificationsHeading" hidden>🔔 Notifications</h3><div id="notificationList"></div>
-  <div id="profileHistory"></div>
+  <section id="memberReportBox" hidden style="margin:18px 0;padding:14px;border:1px solid #59418b;border-radius:12px;background:#211d39"><h3 style="margin:0 0 8px">🚩 Report a problem</h3><form onsubmit="submitMemberReport(event)" class="admin-form"><label for="memberReportCategory">What is this about?</label><select id="memberReportCategory" class="field"><option value="bug">Website bug</option><option value="user">Report a member</option><option value="giveaway">Giveaway issue</option><option value="other">Other</option></select><label for="memberReportDetails">Details</label><textarea id="memberReportDetails" class="field" rows="3" maxlength="1500" minlength="5" required placeholder="Tell Ray what happened..."></textarea><button class="save" type="submit">Submit report</button><div id="memberReportStatus" class="small"></div></form></section>
+<div id="profileHistory"></div>
   <button class="save" style="background:#302b48" onclick="signOut()" id="signOutButton" hidden>Sign out</button>
 <div class="status" id="profileStatus" aria-live="polite"></div>
 <p class="small" id="accountNote">You'll need to confirm your email before your account is ready. Use an email address you can access.</p>
 </div></div>
 <div class="modal-wrap" id="adminPanel" role="dialog" aria-modal="true" aria-labelledby="adminTitle" onclick="backdropClose(event,'adminPanel')">
 <div class="modal" style="width:min(100%,720px);max-height:90vh;overflow:auto"><button class="close" aria-label="Close" onclick="closeModal('adminPanel')">×</button>
-<h2 id="adminTitle">RayGiveaway Admin Dashboard</h2><p>Create website giveaways, manage entry deadlines, close entries, and randomly select a winner. Members enter directly on this site.</p>
+<h2 id="adminTitle">RayGiveaway Control Center</h2><p>Your private command center for website activity, members, giveaways, reports, announcements, and security.</p>
+<nav class="control-nav" aria-label="Control Center sections">
+<button type="button" onclick="showControlTab('overview')">📊 Overview</button><button type="button" onclick="showControlTab('members')">👥 Members</button><button type="button" onclick="showControlTab('reports')">🚩 Reports</button><button type="button" onclick="showControlTab('settings')">⚙️ Website Settings</button><button type="button" onclick="showControlTab('activity')">🧾 Activity Log</button>
+</nav>
+<section id="control-overview" class="control-tab-panel">
+<h3>Website Overview</h3><div id="controlStats" class="control-stats"><div class="loading-note">Loading live statistics...</div></div>
+<div class="control-shortcuts"><button type="button" onclick="showControlTab('members')">Manage members</button><button type="button" onclick="showControlTab('reports')">Review reports</button><button type="button" onclick="showControlTab('settings')">Website settings</button></div>
+</section>
+<section id="control-members" class="control-tab-panel" hidden><h3>Member Management</h3><p class="small">Banned members can no longer enter giveaways, send public chat, or message you. Their account is not deleted.</p><input id="controlUserSearch" class="field" placeholder="Search usernames..." oninput="loadControlUsers(this.value)"><div id="controlUserList" class="admin-list">Loading members...</div></section>
+<section id="control-reports" class="control-tab-panel" hidden><h3>Community Reports</h3><p class="small">Review reports submitted by members and update their status.</p><div id="controlReportList" class="admin-list">Loading reports...</div></section>
+<section id="control-settings" class="control-tab-panel" hidden><h3>Website Settings</h3>
+<form class="admin-form" onsubmit="saveControlSettings(event)">
+<label class="control-check"><input type="checkbox" id="maintenanceToggle"> Enable maintenance mode (visitors will see a maintenance screen; admins can still access the site)</label>
+<label class="control-check"><input type="checkbox" id="announcementToggle"> Show announcement on the homepage</label>
+<label for="announcementTitle">Announcement title</label><input id="announcementTitle" class="field" maxlength="100" placeholder="News from RayGiveaway">
+<label for="announcementMessage">Announcement message</label><textarea id="announcementMessage" class="field" rows="3" maxlength="500" placeholder="Write an update for your community..."></textarea>
+<button class="save" type="submit">Save website settings</button><div id="controlSettingsStatus" class="admin-status"></div>
+</form></section>
+<section id="control-activity" class="control-tab-panel" hidden><h3>Admin Activity Log</h3><p class="small">Recent actions performed in the Control Center.</p><div id="controlActivityList" class="admin-list">Loading activity...</div></section>
 <form class="admin-form" id="createGiveawayForm" onsubmit="createGiveaway(event)">
 <label for="adminTitleInput">Giveaway title</label><input class="field" id="adminTitleInput" maxlength="80" required placeholder="Example: Rocket League Credits">
 <label for="adminPrizeInput">Prize</label><input class="field" id="adminPrizeInput" maxlength="120" required placeholder="Example: 1,000 Credits">
@@ -333,6 +356,7 @@ async function refreshAccount(){
  const button=document.getElementById('signOutButton'),save=document.getElementById('saveProfileButton'),stats=document.getElementById('profileStats');
  button.hidden=!session;save.hidden=!session;stats.hidden=!session;
  document.getElementById('notificationsHeading').hidden=!session;
+ document.getElementById('memberReportBox').hidden=!session;
  if(!session){document.getElementById('memberMessageBox').hidden=true;document.getElementById('accountNote').textContent='After signing up, check your email to confirm your address. Use an email you can access.';document.getElementById('notificationList').innerHTML='';document.getElementById('profileHistory').innerHTML='';return;}
  document.getElementById('accountEmail').value=session.user.email||'';await loadMemberPrivateMessages();
  const [{data:profile},{count:entryCount},{count:winCount},{data:entries},{data:wins}]=await Promise.all([
@@ -373,6 +397,134 @@ async function markNotificationRead(id){
 }
 async function signOut(){const {error}=await db.auth.signOut();if(error){showAccountMessage(error.message,true);return;}document.getElementById('accountPassword').value='';document.getElementById('signOutButton').hidden=true;showAccountMessage('You are signed out.');}
 
+
+function showControlTab(tab){
+ document.querySelectorAll('.control-tab-panel').forEach(panel=>panel.hidden=true);
+ const selected=document.getElementById('control-'+tab);if(selected)selected.hidden=false;
+ if(tab==='overview')loadControlOverview();
+ if(tab==='members')loadControlUsers(document.getElementById('controlUserSearch')?.value||'');
+ if(tab==='reports')loadControlReports();
+ if(tab==='settings')loadControlSettings();
+ if(tab==='activity')loadControlActivity();
+}
+async function controlAdminSession(){
+ const {data:{session}}=await db.auth.getSession();
+ if(!session||session.user?.app_metadata?.role!=='admin')return null;
+ return session;
+}
+async function recordAdminActivity(action,targetUserId=null,details={}){
+ const session=await controlAdminSession();if(!session)return;
+ await db.from('admin_activity').insert({admin_id:session.user.id,action,target_user_id:targetUserId,details});
+}
+async function loadControlOverview(){
+ const box=document.getElementById('controlStats');if(!box)return;
+ const [users,giveaways,entries,winners,newUsers,activeGiveaways]=await Promise.all([
+  db.from('profiles').select('user_id',{count:'exact',head:true}),
+  db.from('giveaways').select('id',{count:'exact',head:true}),
+  db.from('entries').select('id',{count:'exact',head:true}),
+  db.from('winners').select('id',{count:'exact',head:true}),
+  db.from('profiles').select('user_id',{count:'exact',head:true}).gte('created_at',new Date(Date.now()-7*86400000).toISOString()),
+  db.from('giveaways').select('id',{count:'exact',head:true}).eq('status','active')
+ ]);
+ const values=[['Members',users.count],['Giveaways',giveaways.count],['Entries',entries.count],['Winners',winners.count],['New members (7 days)',newUsers.count],['Active giveaways',activeGiveaways.count]];
+ box.innerHTML=values.map(([label,value])=>'<div class="control-stat"><strong>'+((value??0).toLocaleString())+'</strong><span>'+label+'</span></div>').join('');
+}
+async function loadControlUsers(query=''){
+ const box=document.getElementById('controlUserList');if(!box)return;box.textContent='Loading members...';
+ const {data:members,error}=await db.from('profiles').select('user_id,username,created_at').order('created_at',{ascending:false}).limit(500);
+ if(error){box.textContent='Could not load members: '+error.message;return;}
+ const term=query.trim().toLowerCase();
+ const filtered=(members||[]).filter(m=>(m.username||'').toLowerCase().includes(term));
+ if(!filtered.length){box.textContent='No matching members.';return;}
+ const ids=filtered.map(m=>m.user_id);
+ const {data:controls}=await db.from('user_moderation').select('user_id,is_banned,reason').in('user_id',ids);
+ const map=Object.fromEntries((controls||[]).map(x=>[x.user_id,x]));
+ box.replaceChildren();
+ filtered.forEach(m=>{
+  const state=map[m.user_id],item=document.createElement('article');item.className='control-user';
+  const info=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('small');
+  name.textContent=m.username||'Member';meta.textContent=(state?.is_banned?'BANNED':'Active')+' · Joined '+new Date(m.created_at).toLocaleDateString()+(state?.reason?' · '+state.reason:'');
+  info.append(name,meta);
+  const action=document.createElement('button');action.className='save';action.style.margin='0';action.textContent=state?.is_banned?'Unban':'Ban';
+  action.onclick=()=>setMemberBan(m.user_id,m.username||'Member',!state?.is_banned);
+  item.append(info,action);box.append(item);
+ });
+}
+async function setMemberBan(userId,username,ban){
+ const session=await controlAdminSession();if(!session)return;
+ const reason=ban?(prompt('Why are you banning '+username+'? (Optional)')||''):null;
+ const {error}=await db.from('user_moderation').upsert({user_id:userId,is_banned:ban,reason,updated_at:new Date().toISOString(),updated_by:session.user.id},{onConflict:'user_id'});
+ if(error){alert('Could not update member: '+error.message);return;}
+ await recordAdminActivity(ban?'Banned member':'Unbanned member',userId,{username,reason});
+ await loadControlUsers(document.getElementById('controlUserSearch')?.value||'');
+}
+async function loadControlReports(){
+ const box=document.getElementById('controlReportList');if(!box)return;box.textContent='Loading reports...';
+ const {data:reports,error}=await db.from('user_reports').select('id,reporter_id,reported_user_id,category,details,status,created_at').order('created_at',{ascending:false}).limit(100);
+ if(error){box.textContent='Could not load reports: '+error.message;return;}
+ if(!reports?.length){box.textContent='No reports have been submitted.';return;}
+ const ids=[...new Set(reports.flatMap(r=>[r.reporter_id,r.reported_user_id].filter(Boolean)))];
+ const {data:profiles}=await db.from('profiles').select('user_id,username').in('user_id',ids);
+ const names=Object.fromEntries((profiles||[]).map(p=>[p.user_id,p.username]));
+ box.replaceChildren();
+ reports.forEach(r=>{
+  const item=document.createElement('article');item.className='control-report';
+  const h=document.createElement('strong');h.textContent=(r.category||'other').toUpperCase()+' · '+r.status;
+  const meta=document.createElement('div');meta.className='admin-meta';meta.textContent='From '+(names[r.reporter_id]||'Member')+(r.reported_user_id?' · About '+(names[r.reported_user_id]||'Member'):'')+' · '+new Date(r.created_at).toLocaleString();
+  const body=document.createElement('p');body.textContent=r.details;
+  const select=document.createElement('select');select.className='field';['open','reviewing','resolved','dismissed'].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;o.selected=s===r.status;select.append(o);});
+  const save=document.createElement('button');save.className='save';save.textContent='Update status';save.onclick=async()=>{const session=await controlAdminSession();const {error}=await db.from('user_reports').update({status:select.value,reviewed_at:new Date().toISOString(),reviewed_by:session?.user.id}).eq('id',r.id);if(error){alert(error.message);return;}await recordAdminActivity('Updated report status',r.reported_user_id,{report_id:r.id,status:select.value});loadControlReports();};
+  item.append(h,meta,body,select,save);box.append(item);
+ });
+}
+async function loadControlSettings(){
+ const {data,error}=await db.from('site_settings').select('*').eq('id',true).maybeSingle();
+ const status=document.getElementById('controlSettingsStatus');
+ if(error){status.textContent='Could not load settings: '+error.message;return;}
+ if(!data)return;
+ document.getElementById('maintenanceToggle').checked=data.maintenance_mode;
+ document.getElementById('announcementToggle').checked=data.announcement_enabled;
+ document.getElementById('announcementTitle').value=data.announcement_title||'';
+ document.getElementById('announcementMessage').value=data.announcement_message||'';
+ status.textContent='';
+}
+async function saveControlSettings(event){
+ event.preventDefault();const session=await controlAdminSession();if(!session)return;
+ const status=document.getElementById('controlSettingsStatus');status.textContent='Saving...';
+ const values={maintenance_mode:document.getElementById('maintenanceToggle').checked,announcement_enabled:document.getElementById('announcementToggle').checked,announcement_title:document.getElementById('announcementTitle').value.trim(),announcement_message:document.getElementById('announcementMessage').value.trim(),updated_at:new Date().toISOString(),updated_by:session.user.id};
+ const {error}=await db.from('site_settings').upsert({id:true,...values},{onConflict:'id'});
+ if(error){status.textContent='Could not save settings: '+error.message;return;}
+ await recordAdminActivity('Updated website settings',null,{maintenance_mode:values.maintenance_mode,announcement_enabled:values.announcement_enabled});
+ status.textContent='Settings saved!';await applySiteSettings();
+}
+async function loadControlActivity(){
+ const box=document.getElementById('controlActivityList');if(!box)return;box.textContent='Loading activity...';
+ const {data,error}=await db.from('admin_activity').select('action,target_user_id,details,created_at').order('created_at',{ascending:false}).limit(50);
+ if(error){box.textContent='Could not load activity: '+error.message;return;}
+ if(!data?.length){box.textContent='No admin activity recorded yet.';return;}
+ box.replaceChildren();data.forEach(row=>{const item=document.createElement('article');item.className='admin-item';const title=document.createElement('strong');title.textContent=row.action;const meta=document.createElement('div');meta.className='admin-meta';meta.textContent=new Date(row.created_at).toLocaleString()+(row.details?.username?' · '+row.details.username:'');item.append(title,meta);box.append(item);});
+}
+async function submitMemberReport(event){
+ event.preventDefault();const {data:{session}}=await db.auth.getSession();if(!session){return;}
+ const details=document.getElementById('memberReportDetails').value.trim();const category=document.getElementById('memberReportCategory').value;const status=document.getElementById('memberReportStatus');
+ if(details.length<5){status.textContent='Please add a few more details.';return;}
+ status.textContent='Submitting...';
+ const {error}=await db.from('user_reports').insert({reporter_id:session.user.id,category,details});
+ if(error){status.textContent='Could not submit report: '+error.message;return;}
+ document.getElementById('memberReportDetails').value='';status.textContent='Report submitted. Thank you!';
+}
+async function applySiteSettings(){
+ const {data,error}=await db.from('site_settings').select('maintenance_mode,announcement_enabled,announcement_title,announcement_message').eq('id',true).maybeSingle();
+ if(error||!data)return;
+ const announcement=document.getElementById('siteAnnouncement');
+ announcement.hidden=!data.announcement_enabled;
+ document.getElementById('siteAnnouncementTitle').textContent=data.announcement_title||'Announcement';
+ document.getElementById('siteAnnouncementMessage').textContent=data.announcement_message||'';
+ const {data:{session}}=await db.auth.getSession();
+ const isAdmin=!!session&&session.user?.app_metadata?.role==='admin';
+ document.getElementById('maintenanceScreen').hidden=!data.maintenance_mode||isAdmin;
+}
+
 let adminBusy=false;
 async function refreshAdminAccess(){
  const {data:{session}}=await db.auth.getSession();
@@ -383,7 +535,7 @@ async function refreshAdminAccess(){
 async function openAdminPanel(){
  const allowed=await refreshAdminAccess();
  if(!allowed){openModal('profile');showAccountMessage('Sign in with the administrator account to open this page.',true);return;}
- openModal('adminPanel');loadAdminGiveaways();loadAdminPrivateInbox();
+ openModal('adminPanel');showControlTab('overview');loadAdminGiveaways();loadAdminPrivateInbox();
 }
 function adminMessage(message,isError=false){const el=document.getElementById('adminStatus');el.style.color=isError?'#ffaaaa':'#a9f0c4';el.textContent=message;}
 async function createGiveaway(event){
@@ -521,7 +673,7 @@ function startLiveChat(){
 }
 
 db.auth.onAuthStateChange(()=>{if(document.getElementById('profile').classList.contains('show'))refreshAccount();refreshAdminAccess();updateChatAccess();syncMemberPresence();});
-document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();loadCommunityPanels();loadChatMessages();startLiveChat();startMemberPresence();db.auth.refreshSession().then(()=>{refreshAdminAccess();updateChatAccess();syncMemberPresence();});
+document.getElementById('year').textContent=new Date().getFullYear();loadHomepageCountdown();applySiteSettings();loadCommunityPanels();loadChatMessages();startLiveChat();startMemberPresence();db.auth.refreshSession().then(()=>{refreshAdminAccess();updateChatAccess();syncMemberPresence();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('enter');closeModal('giveaways');closeModal('profile');closeModal('adminPanel');closeModal('pastGiveaways')}});
 </script>
 </body>
