@@ -43,7 +43,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
 </style>
 </head>
 <body>
-<header><div class="logo">Ray<span>Giveaway</span></div><div style="display:flex;align-items:center;gap:14px"><div class="tag">WIN BIG. PLAY BIG.</div><button id="adminNav" class="admin-nav" hidden onclick="openAdminPanel()">⚙ Admin Panel</button></div></header>
+<header><div class="logo">Ray<span>Giveaway</span></div><div style="display:flex;align-items:center;gap:14px"><div class="tag">WIN BIG. PLAY BIG.</div><button id="adminNav" class="admin-nav" hidden onclick="openAdminPanel()">⚙ Control Center</button></div></header>
 <div id="siteAnnouncement" class="site-announcement" hidden><strong id="siteAnnouncementTitle"></strong><span id="siteAnnouncementMessage"></span></div>
 <div id="maintenanceScreen" class="maintenance-screen" hidden><div><div class="eyebrow">RayGiveaway</div><h1>We'll be right back.</h1><p>The website is temporarily under maintenance. Please check back soon!</p></div></div>
 <main>
@@ -130,7 +130,7 @@ h1{font-size:clamp(2.8rem,8vw,5.7rem);line-height:1.02;margin:22px 0 14px;font-w
     <div id="memberMessageStatus" class="small" aria-live="polite"></div>
   </section>
   <h3 id="notificationsHeading" hidden>🔔 Notifications</h3><div id="notificationList"></div>
-  <section id="memberReportBox" hidden style="margin:18px 0;padding:14px;border:1px solid #59418b;border-radius:12px;background:#211d39"><h3 style="margin:0 0 8px">🚩 Report a problem</h3><form onsubmit="submitMemberReport(event)" class="admin-form"><label for="memberReportCategory">What is this about?</label><select id="memberReportCategory" class="field"><option value="bug">Website bug</option><option value="user">Report a member</option><option value="giveaway">Giveaway issue</option><option value="other">Other</option></select><label for="memberReportDetails">Details</label><textarea id="memberReportDetails" class="field" rows="3" maxlength="1500" minlength="5" required placeholder="Tell Ray what happened..."></textarea><button class="save" type="submit">Submit report</button><div id="memberReportStatus" class="small"></div></form></section>
+  <section id="memberReportBox" hidden style="margin:18px 0;padding:14px;border:1px solid #59418b;border-radius:12px;background:#211d39"><h3 style="margin:0 0 8px">🚩 Report a problem</h3><form onsubmit="submitMemberReport(event)" class="admin-form"><label for="memberReportCategory">What is this about?</label><select id="memberReportCategory" class="field"><option value="bug">Website bug</option><option value="user">Report a member</option><option value="giveaway">Giveaway issue</option><option value="other">Other</option></select><label for="memberReportUsername">Member username (if reporting a member)</label><input id="memberReportUsername" class="field" maxlength="24" placeholder="Username (optional)"><label for="memberReportDetails">Details</label><textarea id="memberReportDetails" class="field" rows="3" maxlength="1500" minlength="5" required placeholder="Tell Ray what happened..."></textarea><button class="save" type="submit">Submit report</button><div id="memberReportStatus" class="small"></div></form></section>
 <div id="profileHistory"></div>
   <button class="save" style="background:#302b48" onclick="signOut()" id="signOutButton" hidden>Sign out</button>
 <div class="status" id="profileStatus" aria-live="polite"></div>
@@ -506,12 +506,12 @@ async function loadControlActivity(){
 }
 async function submitMemberReport(event){
  event.preventDefault();const {data:{session}}=await db.auth.getSession();if(!session){return;}
- const details=document.getElementById('memberReportDetails').value.trim();const category=document.getElementById('memberReportCategory').value;const status=document.getElementById('memberReportStatus');
+ const details=document.getElementById('memberReportDetails').value.trim();const category=document.getElementById('memberReportCategory').value;const username=document.getElementById('memberReportUsername').value.trim();const status=document.getElementById('memberReportStatus');
  if(details.length<5){status.textContent='Please add a few more details.';return;}
- status.textContent='Submitting...';
- const {error}=await db.from('user_reports').insert({reporter_id:session.user.id,category,details});
+ status.textContent='Submitting...';let reported_user_id=null;if(category==='user'&&username){const {data:member}=await db.from('profiles').select('user_id').eq('username',username).maybeSingle();if(!member){status.textContent='Could not find that username. Check the spelling.';return;}reported_user_id=member.user_id;}
+ const {error}=await db.from('user_reports').insert({reporter_id:session.user.id,reported_user_id,category,details});
  if(error){status.textContent='Could not submit report: '+error.message;return;}
- document.getElementById('memberReportDetails').value='';status.textContent='Report submitted. Thank you!';
+ document.getElementById('memberReportDetails').value='';document.getElementById('memberReportUsername').value='';status.textContent='Report submitted. Thank you!';
 }
 async function applySiteSettings(){
  const {data,error}=await db.from('site_settings').select('maintenance_mode,announcement_enabled,announcement_title,announcement_message').eq('id',true).maybeSingle();
@@ -550,6 +550,7 @@ async function createGiveaway(event){
  const {error}=await db.from('giveaways').insert({title,prize,description:description||null,ends_at:endsAt.toISOString(),status:'active'});
  adminBusy=false;
  if(error){adminMessage('Could not create giveaway: '+error.message,true);return;}
+ await recordAdminActivity('Created giveaway',null,{title,prize});
  document.getElementById('createGiveawayForm').reset();adminMessage('Giveaway published!');await loadAdminGiveaways();await loadGiveaways();
 }
 async function loadAdminGiveaways(){
@@ -573,7 +574,7 @@ async function setGiveawayStatus(id,status){
  adminMessage('Updating giveaway...');
  const {error}=await db.from('giveaways').update({status}).eq('id',id);
  if(error){adminMessage('Could not update giveaway: '+error.message,true);return;}
- adminMessage('Giveaway updated.');await loadAdminGiveaways();await loadGiveaways();
+ adminMessage('Giveaway updated.');await recordAdminActivity('Changed giveaway status',null,{giveaway_id:id,status});await loadAdminGiveaways();await loadGiveaways();
 }
 async function pickGiveawayWinner(id){
  if(adminBusy)return;
@@ -584,6 +585,7 @@ async function pickGiveawayWinner(id){
  if(error){adminMessage(error.message||'Could not select a winner.',true);return;}
  const result=data?.[0];
  adminMessage(result?'Winner selected: '+result.winner_username+'! They have been notified in their RayGiveaway profile.':'Winner selected and notification sent.');
+ await recordAdminActivity('Selected giveaway winner',null,{giveaway_id:id,winner:result?.winner_username||'Selected'});
  await loadAdminGiveaways();await loadGiveaways();await loadPastGiveaways();await loadCommunityPanels();
 }
 
